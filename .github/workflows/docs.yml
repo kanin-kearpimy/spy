@@ -30,8 +30,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
+      
       - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages --depth=1
+        run: | 
+          git remote add docs ${{ env.DOCS_REPOSITORY }}
+          git fetch docs main --depth=1
       
       - name: Determine version
         id: version
@@ -57,5 +60,5 @@ jobs:
       
       - name: Build mkdocs
         run: |
-          mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
+          mike deploy -r docs -b main --push --update-aliases ${{ steps.version.outputs.version }} latest
           mike set-default --push latest
