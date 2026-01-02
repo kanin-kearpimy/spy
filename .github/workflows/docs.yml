@@ -65,4 +65,3 @@ jobs:
       - name: Build mkdocs
         run: |
           mike deploy -r docs -b main --push --update-aliases ${{ steps.version.outputs.version }} latest
-          mike set-default --push latest
