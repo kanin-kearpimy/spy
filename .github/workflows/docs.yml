@@ -69,4 +69,4 @@ jobs:
           else
             mike deploy -r docs -b main --push ${{ steps.version.outputs.version }} latest
           fi
-          mike set-default --push latest
+          mike set-default -r docs -b main --push latest
