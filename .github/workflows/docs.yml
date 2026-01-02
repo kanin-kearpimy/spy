@@ -64,4 +64,9 @@ jobs:
       
       - name: Build mkdocs
         run: |
-          mike deploy -r docs -b main --push --update-aliases ${{ steps.version.outputs.version }} latest
+          if git rev-parse --verify docs/main >/dev/null 2>&1; then
+            mike deploy -r docs -b main --push --update-aliases ${{ steps.version.outputs.version }} latest
+          else
+            mike deploy -r docs -b main --push ${{ steps.version.outputs.version }} latest
+          fi
+          mike set-default --push latest
