@@ -33,11 +33,11 @@ jobs:
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
-          ssh-private-key: ${{ secrets.DOCUMENTATION_REPO }}
+          ssh-private-key: ${{ secrets.SPYLANG_DOCS_DEPLOY_KEY }}
       
       - name: Fetch gh-pages branch
         run: | 
-          git remote add docs ${{ vars.DOCS_REPOSITORY }}
+          git remote add docs ${{ vars.SPY_DOCS_REPOSITORY }}
           git fetch docs main --depth=1
       
       - name: Determine version
