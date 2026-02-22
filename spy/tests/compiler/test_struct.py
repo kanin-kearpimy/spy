@@ -509,3 +509,26 @@ class TestStructOnStack(CompilerTest):
             ("not found in this scope", "x"),
         )
         self.compile_raises(src, "main", errors)
+
+    def test_extra_fields(self):
+        src = """
+        @blue
+        def make_Point():
+            fields = {
+                "x": i32,
+                "y": i32,
+            }
+
+            @struct
+            class Point:
+                __extra_fields__ = fields
+
+            return Point
+
+        Point = make_Point()
+
+        def foo() -> Point:
+            return Point(1, 2)
+        """
+        mod = self.compile(src)
+        assert mod.foo() == (2, 4)
