@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING, Annotated, Any, Iterable, Optional
 
-from spy.errors import WIP
+from spy.errors import WIP, SPyError
 from spy.fqn import FQN
 from spy.vm.b import BUILTINS, TYPES, B
 from spy.vm.builtin import W_BuiltinFunc, builtin_method
 from spy.vm.field import W_Field
 from spy.vm.function import FuncParam, W_BuiltinFunc, W_FuncType
 from spy.vm.irtag import IRTag
+from spy.vm.modules.__spy__.interp_dict import W_InterpDict
 from spy.vm.object import ClassBody, W_Object, W_Type
 from spy.vm.opspec import W_MetaArg, W_OpSpec
 from spy.vm.property import W_StaticMethod
@@ -46,6 +47,13 @@ class W_StructType(W_Type):
         case the __make__ function will be registered at vm.make_module time.
         """
         # compute the layout of the struct and get the list of its fields
+        if "__extra_fields__" in body.dict_w:
+            w_extra = body.dict_w.pop("__extra_fields__")
+            assert isinstance(w_extra, W_InterpDict)
+            for name, (_, w_type) in w_extra.items_w.items():
+                assert isinstance(w_type, W_Type)
+                body.fields_w[name] = W_Field(name, w_type)
+
         struct_fields_w, size = calc_layout(body.fields_w)
         self.size = size
 

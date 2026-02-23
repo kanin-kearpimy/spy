@@ -142,7 +142,7 @@ class AbstractFrame:
         #     y = some_red_func()  # const, red
         # They are both const, but "y" cannot be "blue" because we don't know its value
         # during redshift.
-        if name[0] == "@":
+        if name[0] == "@" or name == "__extra_fields__":
             # special case '@if', '@while', etc.
             color: Color = "red"
         else:

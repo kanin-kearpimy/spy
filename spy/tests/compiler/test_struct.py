@@ -531,4 +531,22 @@ class TestStructOnStack(CompilerTest):
             return Point(1, 2)
         """
         mod = self.compile(src)
-        assert mod.foo() == (2, 4)
+        assert mod.foo() == (1, 2)
+
+    def test_extra_fields_wrong_type(self):
+        src = """
+        @blue
+        def make_Point():
+            @struct
+            class Point:
+                __extra_fields__ = 42
+
+            return Point
+
+        Point = make_Point()
+        """
+        errors = expect_errors(
+            "mismatched types",
+            ("expected `__spy__::interp_dict[str, type]`, got `i32`", "42"),
+        )
+        self.compile_raises(src, "", errors, error_reporting="eager")
