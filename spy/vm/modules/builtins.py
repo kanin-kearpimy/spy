@@ -233,6 +233,13 @@ def w_getattr(vm: "SPyVM", wam_obj: W_MetaArg, wam_name: W_MetaArg) -> W_OpSpec:
     assert False, "this function shouldn't be called, it's special cased by astframe"
 
 
+@BUILTINS.builtin_func(color="blue", kind="metafunc")
+def w_setattr(
+    vm: "SPyVM", wam_obj: W_MetaArg, wam_name: W_MetaArg, wam_value: W_MetaArg
+) -> W_OpSpec:
+    assert False, "this function shouldn't be called, it's special cased by astframe"
+
+
 # add aliases for common types. For now we map:
 #   int -> i32
 #   float -> f64

@@ -190,6 +190,42 @@ class TestBuiltins(CompilerTest):
         )
         self.compile_raises(src, "foo", errors)
 
+    def test_setattr(self):
+        src = """
+        from unsafe import raw_alloc, raw_ptr
+
+        @struct
+        class Point:
+            x: i32
+            y: i32
+
+        def foo(x: i32, y: i32) -> i32:
+            p = raw_alloc[Point](1)
+            setattr(p, 'x', x)
+            setattr(p, 'y', y)
+            return p.x + p.y
+        """
+        mod = self.compile(src)
+        assert mod.foo(3, 4) == 7
+        assert mod.foo(10, 20) == 30
+
+    def test_setattr_error(self):
+        src = """
+        @struct
+        class Point:
+            x: i32
+            y: i32
+
+        def foo() -> None:
+            p = Point(1, 2)
+            setattr(p, 'xxx', 42)
+        """
+        errors = expect_errors(
+            "type `test::Point` does not support assignment to attribute 'xxx'",
+            ("this is `test::Point`", "p"),
+        )
+        self.compile_raises(src, "foo", errors)
+
     @only_interp
     def test_dir(self):
         src = """

@@ -1054,12 +1054,17 @@ class AbstractFrame:
         wam_func = self.eval_expr(call.func)
         args_wam = [self.eval_expr(arg) for arg in call.args]
 
+        # special case getattr() and setattr(). This ensures that
+        # we get nice error messages like "type `X` has not attribute 'y'".
+        # See also the specular code in DopplerFrame.shift_expr_Call.
         if wam_func.color == "blue" and wam_func.w_blueval is B.w_getattr:
-            # special case getattr() and treat it as an ast.GetAttr. This ensures that
-            # we get a nice error message like "type `X` has not attribute 'y'".
-            # See also the specular code in DopplerFrame.shift_expr_Call.
             self.special_calls[call] = "getattr"
             w_opimpl = self.vm.call_OP(call.loc, OP.w_GETATTR, args_wam)
+            return self.eval_opimpl(call, w_opimpl, args_wam)
+
+        elif wam_func.color == "blue" and wam_func.w_blueval is B.w_setattr:
+            self.special_calls[call] = "setattr"
+            w_opimpl = self.vm.call_OP(call.loc, OP.w_SETATTR, args_wam)
             return self.eval_opimpl(call, w_opimpl, args_wam)
 
         else:
