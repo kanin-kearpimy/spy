@@ -59,6 +59,7 @@ class AbstractFrame:
     closure: CLOSURE
     symtable: SymTable
     locals: dict[str, LocalVar]
+    special_calls: dict[ast.Call, str]
     specialized_names: dict[ast.Name, ast.Expr]
     specialized_assigns: dict[ast.Assign, ast.Stmt]
     specialized_assignexprs: dict[ast.AssignExpr, ast.Expr]
@@ -90,6 +91,7 @@ class AbstractFrame:
         # or ast.Assign* nodes, which are then used from now on.  This is also
         # useful for Doppler, since shifting simply means to return the
         # specialized version.
+        self.special_calls = {}
         self.specialized_names = {}
         self.specialized_assigns = {}
         self.specialized_assignexprs = {}
@@ -1051,8 +1053,19 @@ class AbstractFrame:
     def eval_expr_Call(self, call: ast.Call) -> W_MetaArg:
         wam_func = self.eval_expr(call.func)
         args_wam = [self.eval_expr(arg) for arg in call.args]
-        w_opimpl = self.vm.call_OP(call.loc, OP.w_CALL, [wam_func] + args_wam)
-        return self.eval_opimpl(call, w_opimpl, [wam_func] + args_wam)
+
+        if wam_func.color == "blue" and wam_func.w_blueval is B.w_getattr:
+            # special case getattr() and treat it as an ast.GetAttr. This ensures that
+            # we get a nice error message like "type `X` has not attribute 'y'".
+            # See also the specular code in DopplerFrame.shift_expr_Call.
+            self.special_calls[call] = "getattr"
+            w_opimpl = self.vm.call_OP(call.loc, OP.w_GETATTR, args_wam)
+            return self.eval_opimpl(call, w_opimpl, args_wam)
+
+        else:
+            # normal case
+            w_opimpl = self.vm.call_OP(call.loc, OP.w_CALL, [wam_func] + args_wam)
+            return self.eval_opimpl(call, w_opimpl, [wam_func] + args_wam)
 
     def eval_expr_CallMethod(self, op: ast.CallMethod) -> W_Object:
         wam_obj = self.eval_expr(op.target)

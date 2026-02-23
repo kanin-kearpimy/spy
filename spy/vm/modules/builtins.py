@@ -7,7 +7,7 @@ The first half is in vm/b.py. See its docstring for more details.
 from typing import TYPE_CHECKING
 
 from spy.errors import SPyError
-from spy.vm.b import BUILTINS, TYPES, B
+from spy.vm.b import BUILTINS, OP, TYPES, B
 from spy.vm.function import W_FuncType
 from spy.vm.modules.__spy__.interp_list import (
     W_StrInterpList,
@@ -226,6 +226,11 @@ def w_dir(vm: "SPyVM", wam_obj: W_MetaArg) -> W_OpSpec:
     names_w = [vm.wrap(name) for name in sorted(names)]
     w_names = make_str_interp_list(names_w)
     return W_OpSpec.const(w_names)
+
+
+@BUILTINS.builtin_func(color="blue", kind="metafunc")
+def w_getattr(vm: "SPyVM", wam_obj: W_MetaArg, wam_name: W_MetaArg) -> W_OpSpec:
+    assert False, "this function shouldn't be called, it's special cased by astframe"
 
 
 # add aliases for common types. For now we map:

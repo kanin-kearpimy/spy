@@ -158,6 +158,38 @@ class TestBuiltins(CompilerTest):
         # check that we can actually call them from SPy code
         assert mod.foo() == 42
 
+    def test_getattr(self):
+        src = """
+        @struct
+        class Point:
+            x: i32
+            y: i32
+
+        def foo(x: i32, y: i32) -> i32:
+            p = Point(x, y)
+            return getattr(p, 'x')
+        """
+        mod = self.compile(src)
+        assert mod.foo(3, 4) == 3
+        assert mod.foo(10, 20) == 10
+
+    def test_getattr_error(self):
+        src = """
+        @struct
+        class Point:
+            x: i32
+            y: i32
+
+        def foo() -> i32:
+            p = Point(1, 2)
+            return getattr(p, 'xxx')
+        """
+        errors = expect_errors(
+            "type `test::Point` has no attribute 'xxx'",
+            ("this is `test::Point`", "p"),
+        )
+        self.compile_raises(src, "foo", errors)
+
     @only_interp
     def test_dir(self):
         src = """
