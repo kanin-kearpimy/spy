@@ -1053,10 +1053,15 @@ class AbstractFrame:
     def eval_expr_Call(self, call: ast.Call) -> W_MetaArg:
         wam_func = self.eval_expr(call.func)
         args_wam = [self.eval_expr(arg) for arg in call.args]
+        w_opimpl = self.vm.call_OP(call.loc, OP.w_CALL, [wam_func] + args_wam)
 
-        # special case getattr() and setattr(). This ensures that
-        # we get nice error messages like "type `X` has not attribute 'y'".
-        # See also the specular code in DopplerFrame.shift_expr_Call.
+        # special case getattr and setattr: if we arrive at this point it means that the
+        # call typed correctly (right number, type and color of arguments). The returned
+        # opimpl is not supposed to be executed, see builtins.w_getattr.
+        #
+        # Instead, we pretend to be ast.GetAttr or ast.SetAttr: this ensures that we get
+        # nice error messages like "type `X` has not attribute 'y'".  See also the
+        # corresponding code in DopplerFrame.shift_expr_Call.
         if wam_func.color == "blue" and wam_func.w_blueval is B.w_getattr:
             self.special_calls[call] = "getattr"
             w_opimpl = self.vm.call_OP(call.loc, OP.w_GETATTR, args_wam)
@@ -1069,7 +1074,6 @@ class AbstractFrame:
 
         else:
             # normal case
-            w_opimpl = self.vm.call_OP(call.loc, OP.w_CALL, [wam_func] + args_wam)
             return self.eval_opimpl(call, w_opimpl, [wam_func] + args_wam)
 
     def eval_expr_CallMethod(self, op: ast.CallMethod) -> W_Object:

@@ -173,7 +173,7 @@ class TestBuiltins(CompilerTest):
         assert mod.foo(3, 4) == 3
         assert mod.foo(10, 20) == 10
 
-    def test_getattr_error(self):
+    def test_getattr_AttributeError(self):
         src = """
         @struct
         class Point:
@@ -187,6 +187,24 @@ class TestBuiltins(CompilerTest):
         errors = expect_errors(
             "type `test::Point` has no attribute 'xxx'",
             ("this is `test::Point`", "p"),
+        )
+        self.compile_raises(src, "foo", errors)
+
+    def test_getattr_red(self):
+        src = """
+        @struct
+        class Point:
+            x: i32
+            y: i32
+
+        def foo() -> i32:
+            var attr = "x"  # this is red
+            p = Point(1, 2)
+            return getattr(p, attr)
+        """
+        errors = expect_errors(
+            "expected blue argument",
+            ("this is red", "attr"),
         )
         self.compile_raises(src, "foo", errors)
 
@@ -209,7 +227,7 @@ class TestBuiltins(CompilerTest):
         assert mod.foo(3, 4) == 7
         assert mod.foo(10, 20) == 30
 
-    def test_setattr_error(self):
+    def test_setattr_AttributeError(self):
         src = """
         @struct
         class Point:
@@ -223,6 +241,24 @@ class TestBuiltins(CompilerTest):
         errors = expect_errors(
             "type `test::Point` does not support assignment to attribute 'xxx'",
             ("this is `test::Point`", "p"),
+        )
+        self.compile_raises(src, "foo", errors)
+
+    def test_setattr_red(self):
+        src = """
+        @struct
+        class Point:
+            x: i32
+            y: i32
+
+        def foo() -> None:
+            var attr = "x"  # this is red
+            p = Point(1, 2)
+            setattr(p, attr, 42)
+        """
+        errors = expect_errors(
+            "expected blue argument",
+            ("this is red", "attr"),
         )
         self.compile_raises(src, "foo", errors)
 
