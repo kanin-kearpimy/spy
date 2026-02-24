@@ -59,6 +59,7 @@ class AbstractFrame:
     closure: CLOSURE
     symtable: SymTable
     locals: dict[str, LocalVar]
+    special_calls: dict[ast.Call, str]
     specialized_names: dict[ast.Name, ast.Expr]
     specialized_assigns: dict[ast.Assign, ast.Stmt]
     specialized_assignexprs: dict[ast.AssignExpr, ast.Expr]
@@ -90,6 +91,7 @@ class AbstractFrame:
         # or ast.Assign* nodes, which are then used from now on.  This is also
         # useful for Doppler, since shifting simply means to return the
         # specialized version.
+        self.special_calls = {}
         self.specialized_names = {}
         self.specialized_assigns = {}
         self.specialized_assignexprs = {}
@@ -142,7 +144,7 @@ class AbstractFrame:
         #     y = some_red_func()  # const, red
         # They are both const, but "y" cannot be "blue" because we don't know its value
         # during redshift.
-        if name[0] == "@":
+        if name[0] == "@" or name == "__extra_fields__":
             # special case '@if', '@while', etc.
             color: Color = "red"
         else:
@@ -1052,7 +1054,27 @@ class AbstractFrame:
         wam_func = self.eval_expr(call.func)
         args_wam = [self.eval_expr(arg) for arg in call.args]
         w_opimpl = self.vm.call_OP(call.loc, OP.w_CALL, [wam_func] + args_wam)
-        return self.eval_opimpl(call, w_opimpl, [wam_func] + args_wam)
+
+        # special case getattr and setattr: if we arrive at this point it means that the
+        # call typed correctly (right number, type and color of arguments). The returned
+        # opimpl is not supposed to be executed, see builtins.w_getattr.
+        #
+        # Instead, we pretend to be ast.GetAttr or ast.SetAttr: this ensures that we get
+        # nice error messages like "type `X` has not attribute 'y'".  See also the
+        # corresponding code in DopplerFrame.shift_expr_Call.
+        if wam_func.color == "blue" and wam_func.w_blueval is B.w_getattr:
+            self.special_calls[call] = "getattr"
+            w_opimpl = self.vm.call_OP(call.loc, OP.w_GETATTR, args_wam)
+            return self.eval_opimpl(call, w_opimpl, args_wam)
+
+        elif wam_func.color == "blue" and wam_func.w_blueval is B.w_setattr:
+            self.special_calls[call] = "setattr"
+            w_opimpl = self.vm.call_OP(call.loc, OP.w_SETATTR, args_wam)
+            return self.eval_opimpl(call, w_opimpl, args_wam)
+
+        else:
+            # normal case
+            return self.eval_opimpl(call, w_opimpl, [wam_func] + args_wam)
 
     def eval_expr_CallMethod(self, op: ast.CallMethod) -> W_Object:
         wam_obj = self.eval_expr(op.target)

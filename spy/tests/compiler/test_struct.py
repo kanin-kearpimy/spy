@@ -509,3 +509,44 @@ class TestStructOnStack(CompilerTest):
             ("not found in this scope", "x"),
         )
         self.compile_raises(src, "main", errors)
+
+    def test_extra_fields(self):
+        src = """
+        @blue
+        def make_Point():
+            fields = {
+                "x": i32,
+                "y": i32,
+            }
+
+            @struct
+            class Point:
+                __extra_fields__ = fields
+
+            return Point
+
+        Point = make_Point()
+
+        def foo() -> Point:
+            return Point(1, 2)
+        """
+        mod = self.compile(src)
+        assert mod.foo() == (1, 2)
+
+    def test_extra_fields_wrong_type(self):
+        src = """
+        @blue
+        def make_Point():
+            @struct
+            class Point:
+                __extra_fields__ = 42
+
+            return Point
+
+        Point = make_Point()
+        """
+        errors = expect_errors(
+            "mismatched types",
+            ("expected `__spy__::interp_dict[str, type]`, got `i32`", "42"),
+        )
+        self.compile_raises(src, "", errors, error_reporting="eager")

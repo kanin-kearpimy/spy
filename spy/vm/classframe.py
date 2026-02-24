@@ -8,7 +8,8 @@ from spy.vm.astframe import AbstractFrame
 from spy.vm.b import B
 from spy.vm.field import W_Field
 from spy.vm.function import CLOSURE, W_Func
-from spy.vm.object import ClassBody
+from spy.vm.modules.__spy__ import SPY
+from spy.vm.object import ClassBody, W_Type
 
 if TYPE_CHECKING:
     from spy.vm.vm import SPyVM
@@ -34,6 +35,12 @@ class ClassFrame(AbstractFrame):
     def run(self) -> ClassBody:
         self.declare_reserved_bool_locals()
 
+        # we declare a special __extra_fields__ local var: this way, if we assign
+        # __extra_fields__ inside a ClassDef, it will be automatically typechecked
+        w_str_type_dict = self.vm.getitem_w(SPY.w_interp_dict, B.w_str, B.w_type)
+        assert isinstance(w_str_type_dict, W_Type)
+        self.declare_local("__extra_fields__", "red", w_str_type_dict, Loc.fake())
+
         for stmt in self.classdef.body:
             self.exec_stmt(stmt)
 
@@ -41,6 +48,10 @@ class ClassFrame(AbstractFrame):
         for name, lv in self.locals.items():
             # ignore reserved bool locals
             if name.startswith("@"):
+                continue
+            if name == "__extra_fields__":
+                if lv.w_val is not None:
+                    body.dict_w["__extra_fields__"] = lv.w_val
                 continue
             if lv.w_val is None:
                 # locals declared but not assigned
@@ -51,7 +62,14 @@ class ClassFrame(AbstractFrame):
         return body
 
     def exec_stmt(self, stmt: ast.Stmt) -> None:
-        allowed = (ast.VarDef, ast.If, ast.Pass, ast.FuncDef)
+        allowed = (
+            ast.VarDef,
+            ast.Assign,
+            ast.AssignLocal,
+            ast.If,
+            ast.Pass,
+            ast.FuncDef,
+        )
         if type(stmt) in allowed:
             return super().exec_stmt(stmt)
 

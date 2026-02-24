@@ -539,7 +539,12 @@ class DopplerFrame(ASTFrame):
         w_opimpl = self.opimpl[call]
         newfunc = self.shifted_expr[call.func]
         newargs = [self.shifted_expr[arg] for arg in call.args]
-        newcall = self.shift_opimpl(call, w_opimpl, [newfunc] + newargs)
+
+        if self.special_calls.get(call) in ("getattr", "setattr"):
+            # see also the corresponding code in ASTFrame.eval_expr_Call.
+            newcall = self.shift_opimpl(call, w_opimpl, newargs)
+        else:
+            newcall = self.shift_opimpl(call, w_opimpl, [newfunc] + newargs)
         return newcall
 
     def shift_expr_CallMethod(self, op: ast.CallMethod, wam: W_MetaArg) -> ast.Expr:
