@@ -9,7 +9,7 @@ from spy.vm.b import B
 from spy.vm.field import W_Field
 from spy.vm.function import CLOSURE, W_Func
 from spy.vm.modules.__spy__ import SPY
-from spy.vm.object import ClassBody
+from spy.vm.object import ClassBody, W_Type
 
 if TYPE_CHECKING:
     from spy.vm.vm import SPyVM
@@ -35,7 +35,10 @@ class ClassFrame(AbstractFrame):
     def run(self) -> ClassBody:
         self.declare_reserved_bool_locals()
 
+        # we declare a special __extra_fields__ local var: this way, if we assign
+        # __extra_fields__ inside a ClassDef, it will be automatically typechecked
         w_str_type_dict = self.vm.getitem_w(SPY.w_interp_dict, B.w_str, B.w_type)
+        assert isinstance(w_str_type_dict, W_Type)
         self.declare_local("__extra_fields__", "red", w_str_type_dict, Loc.fake())
 
         for stmt in self.classdef.body:
