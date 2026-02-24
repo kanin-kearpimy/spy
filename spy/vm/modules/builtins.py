@@ -7,7 +7,7 @@ The first half is in vm/b.py. See its docstring for more details.
 from typing import TYPE_CHECKING
 
 from spy.errors import SPyError
-from spy.vm.b import BUILTINS, OP, TYPES, B
+from spy.vm.b import BUILTINS, TYPES, B
 from spy.vm.function import W_FuncType
 from spy.vm.modules.__spy__.interp_list import (
     W_StrInterpList,
