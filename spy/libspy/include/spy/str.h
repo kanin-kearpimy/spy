@@ -49,4 +49,13 @@ spy_Str *spy_builtins$f64$__str__(double x);
 
 spy_Str *spy_builtins$bool$__str__(bool x);
 
+// str -> int conversion operators
+int32_t spy_operator$str_to_i32(spy_Str *s);
+
+uint32_t spy_operator$str_to_u32(spy_Str *s);
+
+int8_t spy_operator$str_to_i8(spy_Str *s);
+
+uint8_t spy_operator$str_to_u8(spy_Str *s);
+
 #endif /* SPY_STR_H */
