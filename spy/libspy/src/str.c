@@ -1,6 +1,8 @@
 #include "spy.h"
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 spy_Str *
 spy_str_alloc(size_t length) {
@@ -121,4 +123,70 @@ spy_builtins$f64$__str__(double x) {
 spy_Str *
 spy_builtins$bool$__str__(bool x) {
     return spy_str_from_format("%s", x ? "True" : "False");
+}
+
+// Helper: parse a null-terminated copy of spy_Str as an int64_t, raising
+// ValueError if the string is not a valid integer.
+static int64_t
+spy_str_parse_i64(spy_Str *s) {
+    // spy_Str is not null-terminated, so we copy it
+    char buf[64];
+    size_t len = s->length;
+    if (len >= sizeof(buf)) {
+        spy_panic(
+            "ValueError", "invalid literal for int() with base 10", __FILE__, __LINE__
+        );
+    }
+    memcpy(buf, s->utf8, len);
+    buf[len] = '\0';
+
+    char *end;
+    errno = 0;
+    int64_t val = strtoll(buf, &end, 10);
+    if (end == buf || *end != '\0' || errno != 0) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "invalid literal for int() with base 10: '%s'", buf);
+        spy_panic("ValueError", msg, __FILE__, __LINE__);
+    }
+    return val;
+}
+
+static void
+spy_check_range(int64_t val, int64_t lo, int64_t hi, const char *tname) {
+    if (val < lo || val > hi) {
+        char msg[128];
+        snprintf(
+            msg, sizeof(msg), "%s value %lld out of range [%lld, %lld]", tname,
+            (long long)val, (long long)lo, (long long)hi
+        );
+        spy_panic("OverflowError", msg, __FILE__, __LINE__);
+    }
+}
+
+int32_t
+spy_operator$str_to_i32(spy_Str *s) {
+    int64_t val = spy_str_parse_i64(s);
+    spy_check_range(val, -2147483648LL, 2147483647LL, "i32");
+    return (int32_t)val;
+}
+
+uint32_t
+spy_operator$str_to_u32(spy_Str *s) {
+    int64_t val = spy_str_parse_i64(s);
+    spy_check_range(val, 0LL, 4294967295LL, "u32");
+    return (uint32_t)val;
+}
+
+int8_t
+spy_operator$str_to_i8(spy_Str *s) {
+    int64_t val = spy_str_parse_i64(s);
+    spy_check_range(val, -128LL, 127LL, "i8");
+    return (int8_t)val;
+}
+
+uint8_t
+spy_operator$str_to_u8(spy_Str *s) {
+    int64_t val = spy_str_parse_i64(s);
+    spy_check_range(val, 0LL, 255LL, "u8");
+    return (uint8_t)val;
 }
