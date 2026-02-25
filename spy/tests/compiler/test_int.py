@@ -1,7 +1,7 @@
 import pytest
 
 from spy.errors import SPyError
-from spy.tests.support import CompilerTest, skip_backends
+from spy.tests.support import CompilerTest
 
 
 @pytest.fixture(params=["i32", "u32", "i8", "u8"])
